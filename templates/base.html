@@ -1,0 +1,21 @@
+{% load static %}
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <title>{% block title %}在线订餐{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'css/dist.css' %}">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body style="background:#f8fafc;">
+  <nav style="background:#fff;border-bottom:1px solid #eee;padding:10px 0;">
+    <div style="max-width:900px;margin:0 auto;display:flex;justify-content:space-between;">
+      <a href="/">FoodOrder</a>
+      <a href="/admin/">后台</a>
+    </div>
+  </nav>
+  <main style="max-width:900px;margin:10px auto;">
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>
