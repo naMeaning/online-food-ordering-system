@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}注册{% endblock %}
+{% block content %}
+<div class="max-w-sm mx-auto card">
+  <h1 class="text-lg font-semibold mb-3">注册</h1>
+  <form method="post" action="">
+    {% csrf_token %}
+    <div class="mb-3">
+      <label class="block text-sm mb-1">用户名</label>
+      <input name="username" required class="rounded border w-full p-2">
+    </div>
+    <div class="mb-3">
+      <label class="block text-sm mb-1">密码</label>
+      <input type="password" name="password" minlength="6" required class="rounded border w-full p-2">
+    </div>
+    <div class="mb-3">
+      <label class="block text-sm mb-1">邮箱（可选）</label>
+      <input type="email" name="email" class="rounded border w-full p-2">
+    </div>
+    <button class="btn w-full">注册并前往登录</button>
+  </form>
+  <div class="text-sm text-slate-600 mt-3">
+    已有账号？<a href="{% url 'login' %}" class="underline">去登录</a>
+  </div>
+</div>
+{% endblock %}

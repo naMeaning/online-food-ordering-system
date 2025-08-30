@@ -1,21 +1,58 @@
 {% load static %}
 <!doctype html>
-<html lang="zh">
+<html lang="zh" class="h-full bg-slate-50">
 <head>
   <meta charset="utf-8">
   <title>{% block title %}在线订餐{% endblock %}</title>
-  <link rel="stylesheet" href="{% static 'css/dist.css' %}">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Tailwind 构建产物 -->
+  <link href="{% static 'css/dist.css' %}" rel="stylesheet">
+  <!-- 下发 CSRF，供 fetch 使用 -->
+  <meta name="csrf-token" content="{{ csrf_token }}">
 </head>
-<body style="background:#f8fafc;">
-  <nav style="background:#fff;border-bottom:1px solid #eee;padding:10px 0;">
-    <div style="max-width:900px;margin:0 auto;display:flex;justify-content:space-between;">
-      <a href="/">FoodOrder</a>
-      <a href="/admin/">后台</a>
+<body class="min-h-full">
+  <header class="border-b bg-white/70 backdrop-blur sticky top-0 z-10">
+    <div class="container flex items-center justify-between py-3">
+      <a href="/" class="font-semibold text-lg">FoodOrder</a>
+      <nav class="flex items-center gap-4 text-sm">
+        <div class="flex items-center gap-2">
+        <a href="/" class="chip">菜单</a>
+        <a href="/orders/" class="chip">我的订单</a>
+        <a href="/staff/orders/" class="chip">商家面板</a>
+        <a href="/cart/" class="chip">购物车</a>
+        <a href="/admin/" class="chip">管理后台</a>
+        <a href="/api/" class="chip">API</a>
+         </div>
+
+         <div>
+          {% if request.user.is_authenticated %}
+            <span class="text-sm text-slate-600 mr-2">你好，{{ request.user.username }}</span>
+            <form action="{% url 'logout' %}" method="post" style="display:inline">
+              {% csrf_token %}
+              <button type="submit" class="chip">退出</button>
+            </form>
+          {% else %}
+            <a href="{% url 'login' %}" class="chip">登录</a>
+          {% endif %}
+          </div>
+      </nav>
     </div>
-  </nav>
-  <main style="max-width:900px;margin:10px auto;">
+  </header>
+
+  <main class="container py-6">
     {% block content %}{% endblock %}
   </main>
+
+  <div id="toast" class="fixed bottom-4 left-1/2 -translate-x-1/2 hidden"></div>
+
+  <!-- 重要：全站 JS -->
+  <script src="{% static 'js/app.js' %}"></script>
+  {% if current_restaurant %}
+
+  {% endif %}
 </body>
 </html>
+{% block extra_js %}
+<script>window.__RID__ = {{ rid|default:"null" }};</script>
+<script src="{% static 'js/checkout.js' %}"></script>
+{% endblock %}

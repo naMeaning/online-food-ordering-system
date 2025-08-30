@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}我的订单{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-4">
+  <h1 class="text-lg font-semibold">我的订单</h1>
+  <a href="/" class="chip">返回菜单</a>
+</div>
+
+<!-- 筛选条 -->
+<form method="get" class="card mb-4">
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+    <div>
+      <label class="block text-sm text-slate-600 mb-1">订单状态</label>
+      <select name="status" class="w-full rounded border">
+        <option value="">全部</option>
+        {% for key,label in status_choices %}
+          <option value="{{ key }}" {% if status_val == key %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label class="block text-sm text-slate-600 mb-1">服务类型</label>
+      <select name="service" class="w-full rounded border">
+        <option value="">全部</option>
+        {% for key,label in service_choices %}
+          <option value="{{ key }}" {% if service_val == key %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="md:col-span-2 flex items-end gap-2">
+      <button class="btn">筛选</button>
+      <a href="{% url 'orders_list' %}" class="btn bg-slate-700 hover:bg-slate-800">重置</a>
+    </div>
+  </div>
+</form>
+
+<!-- 列表 -->
+<div class="space-y-3">
+  {% for o in page_obj %}
+    <div class="card">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <div>
+          <div class="flex items-center gap-2">
+            <a href="{% url 'order_detail' o.id %}" class="font-semibold">订单 #{{ o.id }}</a>
+
+            {# 状态徽章：用 if/elif 选择颜色 #}
+            {% if o.status == "CREATED" %}
+              <span class="badge badge-slate">{{ o.get_status_display }}</span>
+            {% elif o.status == "PAID" %}
+              <span class="badge badge-emerald">{{ o.get_status_display }}</span>
+            {% elif o.status == "CONFIRMED" or o.status == "READY" %}
+              <span class="badge badge-indigo">{{ o.get_status_display }}</span>
+            {% elif o.status == "DELIVERING" %}
+              <span class="badge badge-amber">{{ o.get_status_display }}</span>
+            {% elif o.status == "COMPLETED" %}
+              <span class="badge badge-emerald">{{ o.get_status_display }}</span>
+            {% elif o.status == "CANCELLED" %}
+              <span class="badge badge-rose">{{ o.get_status_display }}</span>
+            {% else %}
+              <span class="badge badge-slate">{{ o.status }}</span>
+            {% endif %}
+
+            {% if o.service_type == "DELIVERY" %}
+              <span class="badge badge-indigo">{{ o.get_service_type_display }}</span>
+            {% else %}
+              <span class="badge badge-amber">{{ o.get_service_type_display }}</span>
+            {% endif %}
+          </div>
+
+          <div class="text-xs text-slate-500 mt-1">创建于 {{ o.created_at }}</div>
+
+          <!-- 菜品摘要：只展示前两条（注意 .all） -->
+          <ul class="mt-2 text-sm text-slate-700">
+            {% for it in o.items.all|slice:":2" %}
+              <li>{{ it.dish_name }} × {{ it.quantity }}（¥{{ it.unit_price|floatformat:2 }}）</li>
+            {% endfor %}
+            {% if o.items.count > 2 %}
+              <li class="text-slate-500 text-xs">…… 等共 {{ o.items.count }} 件</li>
+            {% endif %}
+          </ul>
+        </div>
+
+        <div class="text-right">
+          <div class="text-lg">合计：<span class="text-rose-600 font-semibold">¥ {{ o.total_amount }}</span></div>
+          <div class="mt-2 flex justify-end gap-2">
+            <a href="{% url 'order_detail' o.id %}" class="btn">查看</a>
+            {% if o.status == "CREATED" %}
+              <button class="btn pay" data-id="{{ o.id }}">模拟支付</button>
+              <button class="btn bg-rose-600 hover:bg-rose-700 cancel" data-id="{{ o.id }}">取消</button>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  {% empty %}
+    <div class="card text-slate-600">暂无订单。</div>
+  {% endfor %}
+</div>
+
+<!-- 分页器 -->
+{% if page_obj.paginator.num_pages > 1 %}
+  <div class="mt-4 flex justify-center items-center gap-2">
+    {% if page_obj.has_previous %}
+      <a class="chip" href="?page={{ page_obj.previous_page_number }}{% if status_val %}&status={{ status_val }}{% endif %}{% if service_val %}&service={{ service_val }}{% endif %}">上一页</a>
+    {% endif %}
+    <span class="text-sm text-slate-600">第 {{ page_obj.number }} / {{ page_obj.paginator.num_pages }} 页</span>
+    {% if page_obj.has_next %}
+      <a class="chip" href="?page={{ page_obj.next_page_number }}{% if status_val %}&status={{ status_val }}{% endif %}{% if service_val %}&service={{ service_val }}{% endif %}">下一页</a>
+    {% endif %}
+  </div>
+{% endif %}
+
+<script src="{% static 'js/orders_list.js' %}"></script>
+{% endblock %}

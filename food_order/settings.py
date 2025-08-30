@@ -27,6 +27,9 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
+LOGIN_URL = "/accounts/login/"
+LOGIN_REDIRECT_URL = "/"        # 登录后回到首页
+LOGOUT_REDIRECT_URL = "/"       # 登出后回到首页
 
 # Application definition
 
@@ -38,7 +41,9 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     
-    
+
+
+
     "rest_framework",          # DRF：做 API
     "django_filters",          # 列表过滤
     "corsheaders",             # 跨域（前后端分离时需要）
@@ -87,8 +92,13 @@ WSGI_APPLICATION = "food_order.wsgi.application"
 
 DATABASES = {
     "default": {
+        # "ENGINE": "django.db.backends.sqlite3",
         "ENGINE": "django.db.backends.sqlite3",
         "NAME": BASE_DIR / "db.sqlite3",
+        
+        
+        
+        
     }
 }
 
@@ -140,8 +150,17 @@ MEDIA_ROOT = BASE_DIR / "media"
 # —— DRF 默认配置 ——（分页/搜索/过滤）
 REST_FRAMEWORK = {
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
+    
+    
     "PAGE_SIZE": 12,
-    "DEFAULT_AUTHENTICATION_CLASSES": ["rest_framework.authentication.SessionAuthentication"],
+    
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticatedOrReadOnly",
+    ],
+    
+    "DEFAULT_AUTHENTICATION_CLASSES": ["rest_framework.authentication.SessionAuthentication",
+                                       "rest_framework_simplejwt.authentication.JWTAuthentication",],
+    
     "DEFAULT_FILTER_BACKENDS": [
         "django_filters.rest_framework.DjangoFilterBackend",
         "rest_framework.filters.SearchFilter",
@@ -162,3 +181,14 @@ LOGGING = {
 
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+
+# SimpleJWT 可选细化（默认也能用）
+from datetime import timedelta
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+    "ROTATE_REFRESH_TOKENS": False,
+    "BLACKLIST_AFTER_ROTATION": False,
+    "UPDATE_LAST_LOGIN": True,
+}

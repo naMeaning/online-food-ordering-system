@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}购物车{% endblock %}
+
+{% block content %}
+  <div class="flex items-center justify-between mb-4">
+    <h1 class="text-xl font-semibold">我的购物车</h1>
+    <div class="flex items-center gap-2">
+      <a href="/" class="btn bg-slate-700 hover:bg-slate-800">返回菜单</a>
+      <button id="clear-cart"
+              class="btn bg-rose-600 hover:bg-rose-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              {% if not request.user.is_authenticated or not items %}disabled{% endif %}>
+        清空购物车
+      </button>
+    </div>
+  </div>
+
+  {% if not request.user.is_authenticated %}
+    <div class="p-4 border border-amber-300 bg-amber-50 rounded-xl">
+      需要登录后才能查看购物车。
+      <a class="underline text-indigo-700" href="/admin/login/?next=/cart/">去登录</a>
+    </div>
+  {% else %}
+    {% if items %}
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <table class="w-full">
+          <thead class="bg-slate-50 text-slate-600 text-sm">
+            <tr>
+              <th class="text-left p-3">菜品</th>
+              <th class="text-left p-3">单价</th>
+              <th class="text-left p-3">数量</th>
+              <th class="text-left p-3">小计</th>
+              <th class="text-left p-3">操作</th>
+            </tr>
+          </thead>
+          <tbody id="cart-tbody" class="text-sm">
+            {% for i in items %}
+              <tr class="border-t" data-id="{{ i.id }}">
+                <td class="p-3">
+                  <div class="flex items-center gap-3">
+                    {% if i.dish.cover %}<img src="{{ i.dish.cover.url }}" class="w-14 h-14 object-cover rounded-md">{% endif %}
+                    <div>
+                      <div class="font-medium">{{ i.dish.name }}</div>
+                      <div class="text-slate-500 text-xs">#{{ i.dish.category.name }}</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="p-3 text-rose-600 font-semibold">¥ {{ i.dish.price }}</td>
+                <td class="p-3">
+                  <div class="inline-flex items-center gap-1">
+                    <button class="px-2 py-1 rounded border minus">-</button>
+                    <input type="number" min="1" value="{{ i.quantity }}" class="w-16 text-center rounded border qty-input">
+                    <button class="px-2 py-1 rounded border plus">+</button>
+                  </div>
+                </td>
+                <td class="p-3 font-medium line-total">¥ {{ i.line_amount|floatformat:2 }}</td>
+                <td class="p-3">
+                  <button class="px-3 py-1 rounded border border-rose-300 text-rose-700 remove">删除</button>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="mt-4 flex items-center justify-end gap-6">
+        <div>共 <span id="sum-qty">{{ total_qty }}</span> 件</div>
+        <div class="text-lg">合计：<span id="sum-amount" class="text-rose-600 font-semibold">¥ {{ total_amount }}</span></div>
+        <a class="btn" href="{% url 'checkout' %}?rid={{ rid }}">去结算</a>
+      </div>
+    {% else %}
+      <div class="text-slate-500">购物车是空的，去 <a class="underline" href="/">逛逛</a> 吧～</div>
+    {% endif %}
+  {% endif %}
+
+  <script src="{% static 'js/cart.js' %}"></script>
+
+
+
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+  window.__RID__ = {{ rid|default:"null" }};
+</script>
+<script src="{% static 'js/cart.js' %}"></script>
+{% endblock %}

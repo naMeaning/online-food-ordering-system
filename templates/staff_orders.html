@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}商家订单{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-4">
+  <h1 class="text-lg font-semibold">商家订单面板</h1>
+  <div class="flex items-center gap-2">
+    <a href="/" class="chip">前台首页</a>
+    <a href="/orders/" class="chip">我的订单</a>
+  </div>
+</div>
+
+<!-- 筛选条（只影响前端调用 API 的查询参数） -->
+<div class="card mb-4">
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+    <div>
+      <label class="block text-sm text-slate-600 mb-1">状态</label>
+      <select id="f-status" class="w-full rounded border">
+        <option value="">全部</option>
+        <option value="PAID">已支付</option>
+        <option value="CONFIRMED">已接单</option>
+        <option value="READY">已出餐</option>
+        <option value="DELIVERING">配送中</option>
+        <option value="COMPLETED">已完成</option>
+        <option value="CANCELLED">已取消</option>
+      </select>
+    </div>
+    <div>
+      <label class="block text-sm text-slate-600 mb-1">类型</label>
+      <select id="f-service" class="w-full rounded border">
+        <option value="">全部</option>
+        <option value="DELIVERY">外送</option>
+        <option value="DINE_IN">堂食</option>
+      </select>
+    </div>
+    <div class="md:col-span-2 flex items-end gap-2">
+      <button id="btn-refresh" class="btn">刷新</button>
+      <span class="text-xs text-slate-500">每 7 秒自动刷新</span>
+    </div>
+  </div>
+</div>
+
+<!-- 列表容器 -->
+<div id="list" class="space-y-3">
+  <div class="card text-slate-600">加载中…</div>
+</div>
+
+<script src="{% static 'js/staff_orders.js' %}"></script>
+{% endblock %}

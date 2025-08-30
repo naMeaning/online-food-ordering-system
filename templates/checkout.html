@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}去结算{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <!-- 左：收货/就餐信息 -->
+  <section class="lg:col-span-2 card">
+    <h1 class="text-lg font-semibold mb-4">订单信息</h1>
+
+    <form id="checkout-form" class="space-y-4">
+      <!-- 服务类型 -->
+      <div>
+        <label class="block text-sm text-slate-600 mb-2">服务类型</label>
+        <label class="inline-flex items-center gap-2 mr-6">
+        <input type="radio" name="service_type" value="DELIVERY" checked>
+        <span class="badge badge-indigo">外送</span>
+        </label>
+        <label class="inline-flex items-center gap-2">
+        <input type="radio" name="service_type" value="DINE_IN">
+        <span class="badge badge-amber">堂食</span>
+</label>
+      </div>
+
+      <!-- 外送需要的字段 -->
+      <div id="section-delivery" class="space-y-3">
+        <div>
+          <label class="block text-sm text-slate-600 mb-1">收货人</label>
+          <input name="contact_name" class="w-full rounded border" placeholder="张三">
+        </div>
+        <div>
+          <label class="block text-sm text-slate-600 mb-1">手机号</label>
+          <input name="contact_phone" class="w-full rounded border" placeholder="13800000000">
+        </div>
+        <div>
+          <label class="block text-sm text-slate-600 mb-1">收货地址</label>
+          <textarea name="address_line" class="w-full rounded border" rows="3" placeholder="XX路XX号"></textarea>
+        </div>
+      </div>
+
+      <!-- 堂食需要的字段 -->
+      <div id="section-dinein" class="space-y-3 hidden">
+        <div>
+          <label class="block text-sm text-slate-600 mb-1">桌号 / 取餐码</label>
+          <input name="table_no" class="w-full rounded border" placeholder="A12 / 5号桌">
+        </div>
+      </div>
+
+      <!-- 支付方式（先用模拟） -->
+      <div>
+        <label class="block text-sm text-slate-600 mb-2">支付方式</label>
+        <label class="inline-flex items-center gap-2 mr-4">
+          <input type="radio" name="payment_method" value="DUMMY" checked> 模拟支付
+        </label>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <a href="/cart/" class="btn bg-slate-700 hover:bg-slate-800">返回购物车</a>
+        <button type="submit" id="btn-submit" class="btn flex-1">提交订单</button>
+      </div>
+
+      <input type="hidden" name="restaurant_id" value="{{ rid }}">
+      <p id="checkout-error" class="text-rose-600 text-sm hidden"></p>
+
+
+    </form>
+  </section>
+
+  <!-- 右：订单摘要（来自购物车） -->
+  <aside class="card">
+    <h2 class="font-semibold mb-3">订单摘要</h2>
+    {% if items %}
+      <ul class="divide-y mb-3">
+        {% for i in items %}
+          <li class="py-2 flex items-center justify-between">
+            <div class="truncate text-sm">{{ i.dish.name }} × {{ i.quantity }}</div>
+            <div class="text-rose-600">¥ {{ i.dish.price|floatformat:2 }}</div>
+          </li>
+        {% endfor %}
+      </ul>
+      <div class="flex items-center justify-between">
+        <div>共 {{ total_qty }} 件</div>
+        <div class="text-lg">合计：<span class="text-rose-600 font-semibold">¥ {{ total_amount }}</span></div>
+      </div>
+    {% else %}
+      <p class="text-slate-500">购物车为空。先去 <a class="underline" href="/">菜单</a> 选购吧。</p>
+    {% endif %}
+  </aside>
+</div>
+
+<script>
+  window.__RID__ = {{ rid|default:"null" }};
+</script>
+<script src="{% static 'js/checkout.js' %}"></script>
+{% endblock %}

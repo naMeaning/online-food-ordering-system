@@ -1,6 +1,86 @@
 {% extends "base.html" %}
+{% load static %}
 {% block title %}首页 - 在线订餐{% endblock %}
 {% block content %}
-<h1>模板与静态文件 OK</h1>
-<p>下一步我们把“分类/菜品”打通。</p>
+
+<form method="get" class="flex items-center gap-2 mb-4">
+  <label class="text-sm text-slate-600">当前店铺：</label>
+  <select name="rid" class="rounded border p-1" onchange="this.form.submit()">
+    {% for r in restaurants %}
+      <option value="{{ r.id }}" {% if current_restaurant and r.id == current_restaurant.id %}selected{% endif %}>
+        {{ r.name }}
+      </option>
+    {% endfor %}
+  </select>
+</form>
+
+
+
+<div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+  <!-- 左侧：菜单 -->
+  <div class="lg:col-span-3">
+    <div class="flex items-center justify-between mb-4">
+      <h1 class="text-xl font-semibold">菜单</h1>
+      <div class="flex gap-2">
+        <a href="/" class="chip {% if not current_cat %}!bg-indigo-600 !text-white{% endif %}">全部</a>
+        {% for c in categories %}
+          <a href="/?category={{ c.id }}" class="chip {% if current_cat|default:'' == c.id|stringformat:'s' %}!bg-indigo-600 !text-white{% endif %}">#{{ c.name }}</a>
+        {% endfor %}
+      </div>
+    </div>
+
+    {% if dishes %}
+    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+      {% for d in dishes %}
+        <div class="card">
+          <div class="aspect-[4/3] w-full overflow-hidden rounded-xl bg-slate-100">
+            {% if d.cover %}<img src="{{ d.cover.url }}" class="w-full h-full object-cover" alt="{{ d.name }}">{% endif %}
+          </div>
+          <div class="mt-2 flex items-start justify-between gap-2">
+            <div>
+              <div class="font-medium">{{ d.name }}</div>
+              <div class="text-slate-500 text-sm">{{ d.category.name }}</div>
+            </div>
+            <div class="text-rose-600 font-semibold">¥ {{ d.price }}</div>
+          </div>
+          <button class="btn w-full mt-3 add-to-cart" data-dish="{{ d.id }}">加入购物车</button>
+        </div>
+      {% endfor %}
+    </div>
+    {% else %}
+      <p class="text-slate-500">暂无菜品，请到后台添加。</p>
+    {% endif %}
+  </div>
+
+  <!-- 右侧：迷你购物车 -->
+  <aside class="lg:col-span-1">
+    <div class="sticky top-20">
+      <div class="card">
+        <div class="flex items-center justify-between mb-2">
+          <h2 class="font-semibold">我的购物车</h2>
+          <a href="/cart/" class="chip">查看全部</a>
+        </div>
+
+        <div id="mini-cart-notice" class="hidden p-3 rounded bg-amber-50 border border-amber-200 text-sm text-amber-700">
+          请先 <a class="underline" href="/admin/login/?next=/">登录</a> 后查看购物车。
+        </div>
+
+        <div id="mini-cart-loading" class="text-sm text-slate-500">加载中…</div>
+        <ul id="mini-cart-list" class="divide-y hidden"></ul>
+        <div id="mini-cart-empty" class="text-sm text-slate-500 hidden">购物车空空如也～</div>
+
+        <div id="mini-cart-summary" class="hidden mt-3 flex items-center justify-between">
+          <div class="text-sm">共 <span id="mini-cart-qty">0</span> 件</div>
+          <div class="text-base">合计：<span id="mini-cart-amount" class="text-rose-600 font-semibold">¥ 0.00</span></div>
+        </div>
+
+        <div class="mt-3 flex gap-2">
+          <button id="mini-cart-clear" class="chip text-rose-700 border-rose-300">清空</button>
+          <a class="chip" href="{% url 'checkout' %}?rid={{ current_restaurant.id }}">去结算</a>
+        </div>
+      </div>
+    </div>
+  </aside>
+</div>
+
 {% endblock %}
