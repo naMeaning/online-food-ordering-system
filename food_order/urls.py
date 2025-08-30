@@ -43,11 +43,10 @@ urlpatterns = [
     path('cart/',cart_page,name = 'cart'),
     path("accounts/", include("accounts.urls")),    
      # 购物车 API
-    path("api/cart/", cart_views.cart_api, name="api_cart"),
-    path("api/cart/clear/", cart_views.clear_cart_view, name="api_cart_clear"),  
-     
-    path('api/cart/add/', cart_views.add_to_cart, name='api_cart_add'),
-    path('api/cart/update/', cart_views.update_cart_item, name='api_cart_update'),
+    # path("api/cart/", cart_views.cart_api, name="api_cart"),
+    # path("api/cart/clear/", cart_views.clear_cart_view, name="api_cart_clear"),  
+    # path('api/cart/add/', cart_views.add_to_cart, name='api_cart_add'),
+    # path('api/cart/update/', cart_views.update_cart_item, name='api_cart_update'),
 
     
     path("staff/orders/", staff_orders_page, name="staff_orders"),

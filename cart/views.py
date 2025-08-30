@@ -34,22 +34,17 @@ class CartViewSet(viewsets.ModelViewSet):
     """
     serializer_class = CartItemSerializer
     permission_classes = [IsAuthenticated]
-    
-    
+
     def get_queryset(self):
-        # 只允许访问“自己的”购物车
         return CartItem.objects.select_related("dish", "user").filter(user=self.request.user)
-    
+
     def list(self, request, *args, **kwargs):
-        """
-        自定义返回结构：items + totals
-        """
         queryset = self.filter_queryset(self.get_queryset())
         page = self.paginate_queryset(queryset)
         serializer = self.get_serializer(page or queryset, many=True, context={"request": request})
 
         items = serializer.data
-        # 计算总件数/总金额
+        # 计算总件数和总金额
         total_qty = sum(i["quantity"] for i in items)
         total_amount = sum(Decimal(str(i["line_amount"])) for i in items)
 
@@ -58,7 +53,6 @@ class CartViewSet(viewsets.ModelViewSet):
             "total_quantity": total_qty,
             "total_amount": f"{total_amount:.2f}",
         }
-        # 如果启用了分页，上面 items 是分页响应对象，需要展开一下
         if page is not None and isinstance(data["items"], dict) and "results" in data["items"]:
             data["items"] = data["items"]["results"]
         return Response(data)
@@ -72,14 +66,11 @@ class CartViewSet(viewsets.ModelViewSet):
         return Response({"deleted": deleted}, status=status.HTTP_200_OK)
 
 
+# cart/views.py
+
 @require_POST
 def add_to_cart(request):
-    """
-    请求体 JSON: { "dish_id": 1, "qty": 2 }
-    - 自动根据菜品所属餐厅决定是哪个 rid 的购物车
-    - 如果已有该菜品则累加数量
-    返回: { ok, rid, total_qty, total_amount, item_count }
-    """
+    """请求体 JSON: { "dish_id": 1, "qty": 2 }"""
     try:
         data = json.loads(request.body.decode("utf-8"))
         dish_id = int(data.get("dish_id"))
@@ -93,19 +84,18 @@ def add_to_cart(request):
     rid = dish.restaurant_id
     cart = get_cart(request, rid)
 
-    # 查找是否已有该菜
+    # 查找是否已有该菜品
     for it in cart["items"]:
         if it["dish_id"] == dish.id:
             it["qty"] += qty
             break
     else:
-        # 新增一行。单价用字符串存，避免 session JSON 序列化问题
+        # 新增一行
         cart["items"].append({
             "dish_id": dish.id,
             "name": dish.name,
             "unit_price": str(dish.price),
             "qty": qty,
-            # 你也可以附带图片路径/规格等
         })
 
     set_cart(request, rid, cart)
@@ -117,6 +107,7 @@ def add_to_cart(request):
         "total_amount": str(total_amount),
         "item_count": len(cart["items"]),
     })
+
 
 
 @require_POST
@@ -170,30 +161,35 @@ def clear_cart_view(request):
     return JsonResponse({"ok": True, "rid": rid, "total_qty": 0, "total_amount": "0.00"})
 
 
+# cart/views.py
+
 @ensure_csrf_cookie
 def cart_page(request):
-    """
-    购物车页面（可选）：从 ?rid= 读当前店，默认找第一辆非空购物车。
-    """
+    """购物车页面"""
     rid = request.GET.get("rid")
     if rid:
-        rid = int(rid)
-    else:
+        try:
+            rid = int(rid)
+        except ValueError:
+            rid = None
+
+    if not rid:
         rid = find_first_non_empty_rid(request)
-        if rid is None:
-            # 实在没有，就返回首页或空车页
-            return render(request, "cart.html", {"rid": None, "items": [], "total_qty": 0, "total_amount": "0.00"})
+
+    if not rid:
+        return render(request, "cart.html", {
+            "rid": None, "items": [], "total_qty": 0, "total_amount": "0.00",
+            "message": "购物车为空，先去点菜吧～",
+        })
 
     cart = get_cart(request, rid)
     total_qty, total_amount = compute_summary(cart)
-    # 这里 items 是 session 中的“快照”；页面若需要最新价，可以在模板里按 dish_id 再查一次
     return render(request, "cart.html", {
         "rid": rid,
         "items": cart["items"],
         "total_qty": total_qty,
         "total_amount": total_amount,
     })
-    
     
 @ensure_csrf_cookie
 def cart_api(request):

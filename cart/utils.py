@@ -7,11 +7,11 @@ def cart_session_key(rid: int) -> str:
     return f"cart:{rid}"
 
 def get_cart(request, rid: int):
-    """取出某店购物车；没有就返回一个空框架。注意：不能在 session 里存 Decimal。"""
+    """取出某店购物车；没有就返回一个空框架。"""
     key = cart_session_key(rid)
     cart = request.session.get(key)
     if not cart:
-        cart = {"rid": rid, "items": []}
+        cart = {"rid": rid, "items": []}  # 购物车为空时，返回空购物车
     return cart
 
 def set_cart(request, rid: int, cart: dict):
