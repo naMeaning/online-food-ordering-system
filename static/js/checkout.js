@@ -33,6 +33,8 @@ $("#checkout-form")?.addEventListener("submit", async (e) => {
         payment_method: (document.querySelector('input[name="payment_method"]:checked')?.value) || "DUMMY",
         client_token: uuid()
     };
+    body.restaurant_id = window.__RID__ || null;
+
     if (st === "DELIVERY") {
         body.contact_name = document.querySelector('input[name="contact_name"]').value.trim();
         body.contact_phone = document.querySelector('input[name="contact_phone"]').value.trim();
@@ -98,7 +100,7 @@ async function submitOrder() {
 // 清空当前店购物车
 async function clearCart() {
     const rid = window.__RID__;
-    const r = await fetch(`/api/cart/?rid=${rid}`, {
+    const r = await fetch(`/api/sess-cart/?rid=${rid}`, {
         method: "DELETE",
         headers: { "X-CSRFToken": getCsrfToken() },
         credentials: "include",

@@ -46,27 +46,48 @@ function normalizeCartData(raw) {
             unauthorized: false
         };
     }
-    // 情况 D：未登录标记或不可识别
+    // E) Session 结构：{ items: [{ dish_id, name, unit_price, qty }, ...] }
+    if (raw && Array.isArray(raw.items) && raw.items.length && raw.items[0].dish_id) {
+        const items = raw.items.map(it => {
+            const price = parseFloat(it.unit_price || "0");
+            const qty = parseInt(it.qty || 0, 10);
+            return {
+                id: it.dish_id,               // 用 dish_id 作为行标识
+                dish_name: it.name,
+                dish_price: price.toFixed(2),
+                quantity: qty,
+                line_amount: (price * qty).toFixed(2),
+            };
+        });
+        const total_quantity = items.reduce((s, i) => s + (i.quantity || 0), 0);
+        const total_amount = items.reduce((s, i) => s + parseFloat(i.line_amount || 0), 0).toFixed(2);
+        return { items, total_quantity, total_amount, unauthorized: false };
+    }
+
     return { items: [], total_quantity: 0, total_amount: "0.00", unauthorized: !!raw?.unauthorized };
 }
 
 
 async function apiFetchCart() {
-    const res = await fetch("/api/cart/", { credentials: "include" });
-    if (res.status === 403 || res.status === 401) return { unauthorized: true };
+    const rid = window.__RID__;
+    const res = await fetch(`/api/sess-cart/?rid=${rid}`, { credentials: "include" });
     if (!res.ok) throw new Error("获取购物车失败");
     return res.json();
 }
+
+
 async function apiAddToCart(dishId, qty = 1) {
-    const res = await fetch("/api/cart/", {
+    const res = await fetch("/api/sess-cart/add/", {
         method: "POST",
         headers: { "Content-Type": "application/json", "X-CSRFToken": getCsrfToken() },
         credentials: "include",
-        body: JSON.stringify({ dish: dishId, quantity: qty })
+        body: JSON.stringify({ dish_id: dishId, qty })
     });
-    if (!res.ok) throw new Error((await res.json()).detail || "加入购物车失败");
+    if (!res.ok) throw new Error((await res.text()) || "加入购物车失败");
     return res.json();
 }
+
+
 async function apiPatchCart(itemId, newQty) {
     const res = await fetch(`/api/cart/${itemId}/`, {
         method: "PATCH",

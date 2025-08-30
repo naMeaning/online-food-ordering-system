@@ -12,6 +12,8 @@ from .serializers import RegisterSerializer, MyTokenObtainPairSerializer
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.views.decorators.csrf import csrf_protect
+from django.contrib.auth import authenticate, login, logout
+
 
 User = get_user_model()
 
@@ -70,3 +72,25 @@ def register_page(request):
 
     # GET 渲染空表单
     return render(request, "accounts/register.html")
+
+
+@csrf_protect
+def login_page(request):
+    if request.method == "POST":
+        username = (request.POST.get("username") or "").strip()
+        password = request.POST.get("password") or ""
+        user = authenticate(request, username=username, password=password)
+        if user is not None:
+            login(request, user)  # 写入 session
+            next_url = request.POST.get("next") or request.GET.get("next") or "/"
+            return redirect(next_url)
+        messages.error(request, "用户名或密码错误")
+    return render(request, "accounts/login.html")
+
+@csrf_protect
+def logout_view(request):
+    if request.method == "POST":   # 推荐只允许 POST
+        logout(request)            # 清理 session
+        return redirect("/")
+    # GET 请求可返回一个确认页面（可选）
+    return render(request, "accounts/logged_out.html")

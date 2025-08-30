@@ -124,7 +124,7 @@ document.getElementById("clear-cart")?.addEventListener("click", async () => {
 async function addToCart(dishId, qty = 1) {
     const r = await fetch("/api/cart/add/", {
         method: "POST",
-        headers: { "X-CSRFToken": getCsrfToken(), "Content-Type": getCsrfToken() },
+        headers: { "X-CSRFToken": getCsrfToken(), "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({ dish_id: dishId, qty })
     });
