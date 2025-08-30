@@ -26,7 +26,7 @@ from orders.views import OrderViewSet, orders_list_page, checkout_page,order_det
 from accounts.views import RegisterView, MyTokenObtainPairView, MeView
 from rest_framework_simplejwt.views import TokenRefreshView, TokenVerifyView
 from cart import views as cart_views
-
+from accounts import urls
 router = DefaultRouter()
 router.register(f'categories',CategoryViewSet, basename='category')
 router.register(f'dishes',    DishViewSet,     basename='dish')
@@ -40,16 +40,16 @@ urlpatterns = [
     path("checkout/", checkout_page, name="checkout"),      
     path("orders/", orders_list_page, name="orders_list"),
     path("orders/<int:order_id>/", order_detail_page, name="order_detail"), 
-    path('cart/',cart_page,name = 'cart'),
+    path('cart/}',cart_page,name = 'cart'),
     path("accounts/", include("accounts.urls")),    
      # 购物车 API
+
     path("api/sess-cart/", cart_views.cart_api, name="api_sess_cart"),                # GET/DELETE，带 rid
     path("api/sess-cart/clear/", cart_views.clear_cart_view, name="api_sess_cart_clear"),  # POST JSON {rid}
     path("api/sess-cart/add/", cart_views.add_to_cart, name="api_sess_cart_add"),          # POST JSON {dish_id, qty}
     path("api/sess-cart/update/", cart_views.update_cart_item, name="api_sess_cart_update"),
 
 
-    
     path("staff/orders/", staff_orders_page, name="staff_orders"),
     
     path('api/',include(router.urls)),

@@ -1,4 +1,7 @@
 // ---- 通用：CSRF / Toast ----
+
+const RID = (typeof window !== "undefined" && window.__RID__) ? window.__RID__ : null;
+
 function getCsrfToken() {
     const meta = document.querySelector('meta[name="csrf-token"]');
     if (meta && meta.content && meta.content !== "NOTPROVIDED") return meta.content;
@@ -69,15 +72,17 @@ function normalizeCartData(raw) {
 
 
 async function apiFetchCart() {
-    const rid = window.__RID__;
-    const res = await fetch(`/api/sess-cart/?rid=${rid}`, { credentials: "include" });
+    if (!RID) return { items: [], total_quantity: 0, total_amount: "0.00" };
+    const res = await fetch(`/api/cart/?rid=${RID}`, { credentials: "include" });
+    if (res.status === 401 || res.status === 403) return { unauthorized: true };
     if (!res.ok) throw new Error("获取购物车失败");
     return res.json();
 }
 
 
 async function apiAddToCart(dishId, qty = 1) {
-    const res = await fetch("/api/sess-cart/add/", {
+    // 后端 add 接口现在是独立的 /api/cart/add/，入参是 {dish_id, qty}
+    const res = await fetch("/api/cart/add/", {
         method: "POST",
         headers: { "Content-Type": "application/json", "X-CSRFToken": getCsrfToken() },
         credentials: "include",
@@ -89,25 +94,31 @@ async function apiAddToCart(dishId, qty = 1) {
 
 
 async function apiPatchCart(itemId, newQty) {
-    const res = await fetch(`/api/cart/${itemId}/`, {
-        method: "PATCH",
+    // Session 购物车没有“购物车行 id”，用 dish_id + rid 来更新
+    const res = await fetch("/api/cart/update/", {
+        method: "POST",
         headers: { "Content-Type": "application/json", "X-CSRFToken": getCsrfToken() },
         credentials: "include",
-        body: JSON.stringify({ quantity: newQty })
+        body: JSON.stringify({ rid: RID, dish_id: Number(dishId), qty: Number(newQty) })
     });
-    if (!res.ok) throw new Error((await res.json()).detail || "更新数量失败");
+    if (!res.ok) throw new Error((await res.text()) || "更新数量失败");
     return res.json();
 }
-async function apiDeleteCartItem(itemId) {
-    const res = await fetch(`/api/cart/${itemId}/`, {
-        method: "DELETE",
-        headers: { "X-CSRFToken": getCsrfToken() },
+
+async function apiDeleteCartItem(dishId) {
+    // 没有专门 remove 接口，用 update qty=0 代表删除
+    const res = await fetch("/api/cart/update/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-CSRFToken": getCsrfToken() },
         credentials: "include",
+        body: JSON.stringify({ rid: RID, dish_id: Number(dishId), qty: 0 })
     });
-    if (!res.ok && res.status !== 204) throw new Error("删除失败");
+    if (!res.ok) throw new Error((await res.text()) || "删除失败");
 }
+
 async function apiClearCart() {
-    const res = await fetch(`/api/cart/clear/`, {
+    // 两种任选其一：① DELETE /api/cart/?rid=RID ② POST /api/cart/clear/ {rid}
+    const res = await fetch(`/api/cart/?rid=${RID}`, {
         method: "DELETE",
         headers: { "X-CSRFToken": getCsrfToken() },
         credentials: "include",

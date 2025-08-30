@@ -91,6 +91,7 @@ def add_to_cart(request):
 
     dish = get_object_or_404(Dish.objects.select_related("restaurant"), id=dish_id)
     rid = dish.restaurant_id
+    request.session["current_rid"] = rid
     cart = get_cart(request, rid)
 
     # 查找是否已有该菜

@@ -19,7 +19,9 @@
         <a href="/" class="chip">菜单</a>
         <a href="/orders/" class="chip">我的订单</a>
         <a href="/staff/orders/" class="chip">商家面板</a>
-        <a href="/cart/" class="chip">购物车</a>
+        <a href="{% url 'cart' %}{% if current_restaurant %}?rid={{ current_restaurant.id }}
+                       {% elif nav_rid %}?rid={{ nav_rid }}{% endif %}"
+          class="chip">购物车</a>
         <a href="/admin/" class="chip">管理后台</a>
         <a href="/api/" class="chip">API</a>
          </div>

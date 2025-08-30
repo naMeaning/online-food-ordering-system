@@ -108,3 +108,24 @@ async function clearCart() {
     if (!r.ok) { alert("清空失败"); return; }
     // 刷新右侧 UI ...
 }
+
+async function loadSummary() {
+    const rid = window.__RID__;
+    if (!rid) return;
+    const res = await fetch(`/api/cart/?rid=${rid}`, { credentials: "include" });
+    if (!res.ok) return;
+    const data = await res.json(); // { items, total_quantity, total_amount }
+    const ul = document.getElementById("summary-list");
+    const qtyEl = document.getElementById("summary-qty");
+    const amtEl = document.getElementById("summary-amount");
+    const items = data.items || [];
+    ul.innerHTML = items.map(i => (
+        `<li class="flex justify-between py-1">
+       <span class="truncate">${i.name} × ${i.qty}</span>
+       <span>¥ ${i.line_amount}</span>
+     </li>`
+    )).join("");
+    qtyEl.textContent = data.total_quantity || 0;
+    amtEl.textContent = "¥ " + (data.total_amount || "0.00");
+}
+document.addEventListener("DOMContentLoaded", loadSummary);

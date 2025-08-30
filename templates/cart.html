@@ -33,33 +33,26 @@
               <th class="text-left p-3">操作</th>
             </tr>
           </thead>
-          <tbody id="cart-tbody" class="text-sm">
+          <tbody id="cart-tbody">
             {% for i in items %}
-              <tr class="border-t" data-id="{{ i.id }}">
-                <td class="p-3">
-                  <div class="flex items-center gap-3">
-                    {% if i.dish.cover %}<img src="{{ i.dish.cover.url }}" class="w-14 h-14 object-cover rounded-md">{% endif %}
-                    <div>
-                      <div class="font-medium">{{ i.dish.name }}</div>
-                      <div class="text-slate-500 text-xs">#{{ i.dish.category.name }}</div>
-                    </div>
-                  </div>
-                </td>
-                <td class="p-3 text-rose-600 font-semibold">¥ {{ i.dish.price }}</td>
-                <td class="p-3">
-                  <div class="inline-flex items-center gap-1">
-                    <button class="px-2 py-1 rounded border minus">-</button>
-                    <input type="number" min="1" value="{{ i.quantity }}" class="w-16 text-center rounded border qty-input">
-                    <button class="px-2 py-1 rounded border plus">+</button>
-                  </div>
-                </td>
-                <td class="p-3 font-medium line-total">¥ {{ i.line_amount|floatformat:2 }}</td>
-                <td class="p-3">
-                  <button class="px-3 py-1 rounded border border-rose-300 text-rose-700 remove">删除</button>
-                </td>
-              </tr>
+            <tr data-id="{{ i.dish_id }}">
+              <td class="truncate">{{ i.name }}</td>
+              <td>¥ {{ i.unit_price }}</td>
+              <td class="w-32">
+                <div class="flex items-center gap-2">
+                  <button class="px-2 border rounded minus">-</button>
+                  <input type="number" class="qty-input w-16 text-center border rounded" min="1" value="{{ i.qty }}">
+                  <button class="px-2 border rounded plus">+</button>
+                </div>
+              </td>
+              <td class="text-right line-total">¥ {{ i.line_amount }}</td>
+              <td class="text-right">
+                <button class="text-rose-600 underline remove">删除</button>
+              </td>
+            </tr>
             {% endfor %}
           </tbody>
+
         </table>
       </div>
 

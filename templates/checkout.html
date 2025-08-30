@@ -89,7 +89,9 @@
 </div>
 
 <script>
-  window.__RID__ = {{ rid|default:"null" }};
+  // 简单取 URL 参数 rid，或后端渲染来的变量
+  const params = new URLSearchParams(location.search);
+  window.__RID__ = Number(params.get("rid")) || {{ rid|default:"null" }};
 </script>
 <script src="{% static 'js/checkout.js' %}"></script>
 {% endblock %}
