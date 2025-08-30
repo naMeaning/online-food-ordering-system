@@ -1,5 +1,21 @@
 
+document.addEventListener("DOMContentLoaded", () => {
+    const serviceTypeInput = document.querySelector('input[name="service_type"]');
+    if (serviceTypeInput) {
+        serviceTypeInput.addEventListener("change", toggleSections);
+        toggleSections();
+    } else {
+        console.error('Service type input not found');
+    }
+});
 
+function toggleSections() {
+    const st = document.querySelector('input[name="service_type"]:checked')?.value;
+    if (st) {
+        document.querySelector("#section-delivery").classList.toggle("hidden", st !== "DELIVERY");
+        document.querySelector("#section-dinein").classList.toggle("hidden", st !== "DINE_IN");
+    }
+}
 
 function getCsrfToken() {
     const meta = document.querySelector('meta[name="csrf-token"]');

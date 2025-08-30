@@ -70,7 +70,12 @@ class CartViewSet(viewsets.ModelViewSet):
 
 @require_POST
 def add_to_cart(request):
-    """请求体 JSON: { "dish_id": 1, "qty": 2 }"""
+    """
+    请求体 JSON: { "dish_id": 1, "qty": 2 }
+    - 无需考虑餐厅，直接根据菜品和用户加入购物车
+    - 如果已有该菜品则累加数量
+    返回: { ok, total_qty, total_amount, item_count }
+    """
     try:
         data = json.loads(request.body.decode("utf-8"))
         dish_id = int(data.get("dish_id"))
@@ -80,17 +85,17 @@ def add_to_cart(request):
     except Exception:
         return HttpResponseBadRequest("非法 JSON")
 
-    dish = get_object_or_404(Dish.objects.select_related("restaurant"), id=dish_id)
-    rid = dish.restaurant_id
-    cart = get_cart(request, rid)
+    dish = get_object_or_404(Dish, id=dish_id)
+    user = request.user
+    cart = get_cart(request)
 
-    # 查找是否已有该菜品
+    # 查找是否已有该菜
     for it in cart["items"]:
         if it["dish_id"] == dish.id:
             it["qty"] += qty
             break
     else:
-        # 新增一行
+        # 新增一行。单价用字符串存，避免 session JSON 序列化问题
         cart["items"].append({
             "dish_id": dish.id,
             "name": dish.name,
@@ -98,11 +103,10 @@ def add_to_cart(request):
             "qty": qty,
         })
 
-    set_cart(request, rid, cart)
+    set_cart(request, cart)
     total_qty, total_amount = compute_summary(cart)
     return JsonResponse({
         "ok": True,
-        "rid": rid,
         "total_qty": total_qty,
         "total_amount": str(total_amount),
         "item_count": len(cart["items"]),
@@ -110,21 +114,53 @@ def add_to_cart(request):
 
 
 
+# @require_POST
+# def update_cart_item(request):
+#     """
+#     请求体 JSON: { "rid": 10, "dish_id": 1, "qty": 3 }
+#     - qty == 0 表示移除该菜
+#     """
+#     try:
+#         data = json.loads(request.body.decode("utf-8"))
+#         rid = int(data.get("rid"))
+#         dish_id = int(data.get("dish_id"))
+#         qty = int(data.get("qty", 1))
+#     except Exception:
+#         return HttpResponseBadRequest("非法 JSON")
+
+#     cart = get_cart(request)
+#     new_items = []
+#     found = False
+#     for it in cart["items"]:
+#         if it["dish_id"] == dish_id:
+#             found = True
+#             if qty > 0:
+#                 it["qty"] = qty
+#                 new_items.append(it)
+#             # qty==0 则删除
+#         else:
+#             new_items.append(it)
+#     if not found:
+#         return HttpResponseBadRequest("购物车中找不到该菜品")
+
+#     cart["items"] = new_items
+#     set_cart(request, rid, cart)
+#     total_qty, total_amount = compute_summary(cart)
+#     return JsonResponse({"ok": True, "rid": rid, "total_qty": total_qty, "total_amount": str(total_amount)})
 @require_POST
 def update_cart_item(request):
     """
-    请求体 JSON: { "rid": 10, "dish_id": 1, "qty": 3 }
+    请求体 JSON: { "dish_id": 1, "qty": 3 }
     - qty == 0 表示移除该菜
     """
     try:
         data = json.loads(request.body.decode("utf-8"))
-        rid = int(data.get("rid"))
         dish_id = int(data.get("dish_id"))
         qty = int(data.get("qty", 1))
     except Exception:
         return HttpResponseBadRequest("非法 JSON")
 
-    cart = get_cart(request, rid)
+    cart = get_cart(request)
     new_items = []
     found = False
     for it in cart["items"]:
@@ -133,63 +169,66 @@ def update_cart_item(request):
             if qty > 0:
                 it["qty"] = qty
                 new_items.append(it)
-            # qty==0 则删除
+            # qty == 0 表示删除该菜品
         else:
             new_items.append(it)
+
     if not found:
         return HttpResponseBadRequest("购物车中找不到该菜品")
 
     cart["items"] = new_items
-    set_cart(request, rid, cart)
+    set_cart(request, cart)
     total_qty, total_amount = compute_summary(cart)
-    return JsonResponse({"ok": True, "rid": rid, "total_qty": total_qty, "total_amount": str(total_amount)})
+    return JsonResponse({"ok": True, "total_qty": total_qty, "total_amount": str(total_amount)})
 
 
+# @require_POST
+# def clear_cart_view(request):
+#     """
+#     请求体 JSON: { "rid": 10 }
+#     清空某店的购物车
+#     """
+#     try:
+#         data = json.loads(request.body.decode("utf-8"))
+#         rid = int(data.get("rid"))
+#     except Exception:
+#         return HttpResponseBadRequest("非法 JSON")
+
+#     clear_cart(request, rid)
+#     return JsonResponse({"ok": True, "rid": rid, "total_qty": 0, "total_amount": "0.00"})
 @require_POST
 def clear_cart_view(request):
     """
-    请求体 JSON: { "rid": 10 }
-    清空某店的购物车
+    清空购物车
     """
-    try:
-        data = json.loads(request.body.decode("utf-8"))
-        rid = int(data.get("rid"))
-    except Exception:
-        return HttpResponseBadRequest("非法 JSON")
-
-    clear_cart(request, rid)
-    return JsonResponse({"ok": True, "rid": rid, "total_qty": 0, "total_amount": "0.00"})
-
+    clear_cart(request)
+    return JsonResponse({"ok": True, "total_qty": 0, "total_amount": "0.00"})
 
 # cart/views.py
 
 @ensure_csrf_cookie
 def cart_page(request):
     """购物车页面"""
-    rid = request.GET.get("rid")
-    if rid:
-        try:
-            rid = int(rid)
-        except ValueError:
-            rid = None
-
-    if not rid:
-        rid = find_first_non_empty_rid(request)
-
-    if not rid:
+    if not request.user.is_authenticated:
         return render(request, "cart.html", {
-            "rid": None, "items": [], "total_qty": 0, "total_amount": "0.00",
-            "message": "购物车为空，先去点菜吧～",
+            "items": [],
+            "total_qty": 0,
+            "total_amount": "0.00",
+            "message": "请先登录！"
         })
 
-    cart = get_cart(request, rid)
+    cart = get_cart(request)  # 直接根据用户获取购物车
     total_qty, total_amount = compute_summary(cart)
+
     return render(request, "cart.html", {
-        "rid": rid,
         "items": cart["items"],
         "total_qty": total_qty,
         "total_amount": total_amount,
     })
+    
+    
+    
+    
     
 @ensure_csrf_cookie
 def cart_api(request):

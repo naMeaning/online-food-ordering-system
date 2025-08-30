@@ -4,7 +4,7 @@ from django.db.models import F
 from rest_framework import serializers
 from menu.models import Dish
 from cart.models import CartItem
-from cart.utils import get_cart, find_first_non_empty_rid
+from cart.utils import get_cart, find_first_non_empty_rid,clear_cart
 from .models import Order, OrderItem, OrderStatusHistory, Payment, OrderStatus, PaymentMethod,ServiceType
 
 class OrderItemSerializer(serializers.ModelSerializer):
@@ -41,7 +41,7 @@ class OrderCreateSerializer(serializers.Serializer):
 
     client_token  = serializers.CharField(max_length=64, required=False, allow_null=True, allow_blank=True)
     payment_method = serializers.ChoiceField(choices=PaymentMethod.choices, default=PaymentMethod.DUMMY)
-    restaurant_id = serializers.IntegerField(required=False)
+    # restaurant_id = serializers.IntegerField(required=False)
     
     def validate(self, attrs):
         st = attrs.get("service_type", ServiceType.DELIVERY)
@@ -71,13 +71,8 @@ class OrderCreateSerializer(serializers.Serializer):
         request = self.context["request"]
         user = request.user
 
-        rid = validated_data.get("restaurant_id")
-        if not rid:
-            rid = find_first_non_empty_rid(request)
-        if not rid:
-            raise serializers.ValidationError("未找到可结算的店铺购物车")
-
-        cart = get_cart(request, rid)
+        # 获取购物车数据
+        cart = get_cart(request)
         if not cart["items"]:
             raise serializers.ValidationError("购物车为空")
 
@@ -95,11 +90,13 @@ class OrderCreateSerializer(serializers.Serializer):
 
         st = validated_data["service_type"]
         table_no = validated_data.get("table_no") or None
-        contact_name = (validated_data.get("contact_name") or "") if st=="DINE_IN" else validated_data.get("contact_name") or ""
-        contact_phone = (validated_data.get("contact_phone") or "") if st=="DINE_IN" else validated_data.get("contact_phone") or ""
-        address_line = (validated_data.get("address_line") or "") if st=="DINE_IN" else validated_data.get("address_line") or ""
+        contact_name = (validated_data.get("contact_name") or "") if st == "DINE_IN" else validated_data.get("contact_name") or ""
+        contact_phone = (validated_data.get("contact_phone") or "") if st == "DINE_IN" else validated_data.get("contact_phone") or ""
+        address_line = (validated_data.get("address_line") or "") if st == "DINE_IN" else validated_data.get("address_line") or ""
 
         with transaction.atomic():
+            # 现在不再需要 restaurant_id，而是根据购物车中第一个菜品来推导餐厅信息
+            rid = cart["items"][0].get("restaurant_id")  # 获取第一个菜品的餐厅信息
             order = Order.objects.create(
                 user=user, restaurant_id=rid, status=OrderStatus.CREATED,
                 service_type=st, table_no=table_no,
@@ -114,9 +111,8 @@ class OrderCreateSerializer(serializers.Serializer):
                 )
             # 首条状态
             order.status_history.create(from_status=OrderStatus.CREATED, to_status=OrderStatus.CREATED, message="订单已创建")
-            # 清空该店购物车
-            from cart.utils import clear_cart
-            clear_cart(request, rid)
+            # 清空购物车
+            clear_cart(request)  # 使用修改后的不依赖 restaurant_id 的 clear_cart
         return order
 
 

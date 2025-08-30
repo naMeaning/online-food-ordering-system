@@ -246,30 +246,18 @@ class StaffOrderViewSet(viewsets.ReadOnlyModelViewSet):
 @ensure_csrf_cookie
 @login_required
 def checkout_page(request):
-    # 1) 优先用 ?rid=xxx
-    rid = request.GET.get("rid")
-    if rid:
-        try:
-            rid = int(rid)
-        except ValueError:
-            rid = None
-
-    # 2) 没传就兜底：找会话里第一辆“非空购物车”的 rid
-    if not rid:
-        rid = find_first_non_empty_rid(request)
-
-    # 3) 还没有，说明真的没有购物车
-    if not rid:
+    """结算页面，直接读取当前用户购物车"""
+    cart = get_cart(request)
+    if not cart["items"]:
         return render(request, "checkout.html", {
-            "rid": None, "items": [], "total_qty": 0, "total_amount": "0.00",
+            "items": [],
+            "total_qty": 0,
+            "total_amount": "0.00",
             "message": "购物车为空，先去点菜吧～",
         })
 
-    # 4) 读取该店购物车并汇总
-    cart = get_cart(request, rid)
     total_qty, total_amount = compute_summary(cart)
     return render(request, "checkout.html", {
-        "rid": rid,
         "items": cart["items"],
         "total_qty": total_qty,
         "total_amount": total_amount,
