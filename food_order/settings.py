@@ -33,9 +33,10 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
-LOGIN_URL = "/accounts/login/"
-LOGIN_REDIRECT_URL = "/"        # 登录后回到首页
-LOGOUT_REDIRECT_URL = "/"       # 登出后回到首页
+# settings.py
+LOGIN_URL = "login"          # 未登录访问受保护页面 -> 跳/重定向到 /accounts/login/
+LOGIN_REDIRECT_URL = "home"  # 登录成功后默认跳回首页（菜单页）
+LOGOUT_REDIRECT_URL = "login"  # （可选）登出后默认回登录页；我们已经在 LogoutView 指定了 next_page="login"
 
 # Application definition
 

@@ -5,7 +5,6 @@
 <div class="max-w-sm mx-auto card">
   <h1 class="text-lg font-semibold mb-3">登录</h1>
 
-  {# 内置 LoginView 出错时 form.errors 为真；自定义视图用 messages #}
   {% if form and form.errors %}
     <div class="mb-3 text-rose-700 text-sm">用户名或密码错误</div>
   {% endif %}
@@ -30,14 +29,13 @@
       <input type="password" name="password" required class="rounded border w-full p-2" autocomplete="current-password">
     </div>
 
-    {# 支持 next 参数：登录后跳回来源页 #}
     {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
 
     <button class="btn w-full">登录</button>
   </form>
 
   <div class="text-sm text-slate-600 mt-3">
-    没有账号？可以去后台 /admin/ 创建，或后续再做注册页。
+    没有账号？<a href="{% url 'register' %}" class="underline">去注册</a>
   </div>
 </div>
 {% endblock %}

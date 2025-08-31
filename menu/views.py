@@ -7,6 +7,7 @@ from .serializers import CategorySerializer, DishSerializer
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.shortcuts import render, get_object_or_404
 from restaurants.models import Restaurant
+from django.contrib.auth.decorators import login_required # 登录需要
 
 
 
@@ -44,6 +45,7 @@ class DishViewSet(viewsets.ReadOnlyModelViewSet):
 
 # ---- 页面视图（把数据塞给模板）----
 @ensure_csrf_cookie
+@login_required
 def home_page(request):
     """
     首页：展示店铺选择 + 某店的菜品（按 rid 过滤）。
