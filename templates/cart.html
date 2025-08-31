@@ -35,14 +35,26 @@
           </thead>
           <tbody id="cart-tbody" class="text-sm">
             {% for item in items %}
-                <tr>
-                    <td>{{ item.dish_name }}</td>
-                    <td>{{ item.dish_price }}</td>
-                    <td>{{ item.quantity }}</td>
-                    <td>{{ item.line_amount }}</td>
-                </tr>
+              <tr data-id="{{ item.id }}" class="border-t">
+                <td class="p-3">
+                  <div class="font-medium">{{ item.dish_name }}</div>
+                </td>
+                <td class="p-3 text-rose-600">¥ {{ item.dish_price }}</td>
+                <td class="p-3">
+                  <div class="inline-flex items-center gap-1">
+                    <button class="px-2 py-1 rounded border minus">-</button>
+                    <input type="number" min="1" value="{{ item.quantity }}" class="w-16 text-center rounded border qty-input">
+                    <button class="px-2 py-1 rounded border plus">+</button>
+                  </div>
+                </td>
+                <td class="p-3 font-medium line-total">¥ {{ item.line_amount }}</td>
+                <td class="p-3">
+                  <button class="px-3 py-1 rounded border border-rose-300 text-rose-700 remove">删除</button>
+                </td>
+              </tr>
             {% endfor %}
           </tbody>
+
         </table>
       </div>
 
@@ -56,4 +68,6 @@
     {% endif %}
   {% endif %}
   <script src="{% static 'js/cart.js' %}"></script>
+  <script src="{% static 'js/app.js' %}" defer></script>
+
 {% endblock %}

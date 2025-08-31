@@ -41,6 +41,8 @@ urlpatterns = [
     path("orders/", orders_list_page, name="orders_list"),
     path("orders/<int:order_id>/", order_detail_page, name="order_detail"), 
     path("accounts/", include("accounts.urls")),    
+    
+    
      # 购物车 API
     # path("api/cart/", cart_views.cart_api, name="api_cart"),
     # path("api/cart/clear/", cart_views.clear_cart_view, name="api_cart_clear"),  
@@ -48,7 +50,7 @@ urlpatterns = [
     # path('api/cart/update/', cart_views.update_cart_item, name='api_cart_update'),
 
     path('cart/',cart_page,name = 'cart'),
-    
+
     path("staff/orders/", staff_orders_page, name="staff_orders"),
     
     path('api/',include(router.urls)),

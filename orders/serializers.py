@@ -59,60 +59,62 @@ class OrderCreateSerializer(serializers.Serializer):
         return attrs
 
     def create(self, validated_data):
-        """
-        订单创建核心流程（在一次事务里完成）：
-        1) 读取“我的购物车”条目，校验上架&库存
-        2) 锁定涉及到的菜品行（select_for_update）
-        3) 逐条扣减库存 / 增加销量
-        4) 创建订单与明细（价格快照）
-        5) 写状态流水（CREATED）
-        6) 清空购物车
-        """
         request = self.context["request"]
         user = request.user
 
-        # 获取购物车数据
-        cart = get_cart(request)
-        if not cart["items"]:
+        cart_qs = CartItem.objects.select_related("dish").filter(user=user).order_by("id")
+        if not cart_qs.exists():
             raise serializers.ValidationError("购物车为空")
 
-        # 汇总 & 校验库存
         total = Decimal("0.00")
         items_data = []
-        for row in cart["items"]:
-            dish = Dish.objects.select_for_update().get(pk=row["dish_id"])
-            qty = int(row["qty"])
-            unit = dish.price  # Decimal
-            line = (unit * qty).quantize(Decimal("0.01"))
-            total += line
-            # 这里若需要扣库存，写 dish.stock 检查 & 扣减
-            items_data.append((dish, row["name"], unit, qty, line))
+        first_restaurant_id = None
 
-        st = validated_data["service_type"]
-        table_no = validated_data.get("table_no") or None
-        contact_name = (validated_data.get("contact_name") or "") if st == "DINE_IN" else validated_data.get("contact_name") or ""
-        contact_phone = (validated_data.get("contact_phone") or "") if st == "DINE_IN" else validated_data.get("contact_phone") or ""
-        address_line = (validated_data.get("address_line") or "") if st == "DINE_IN" else validated_data.get("address_line") or ""
-
+        # 事务内锁行（如果你做库存控制）
         with transaction.atomic():
-            # 现在不再需要 restaurant_id，而是根据购物车中第一个菜品来推导餐厅信息
-            rid = cart["items"][0].get("restaurant_id")  # 获取第一个菜品的餐厅信息
+            dish_ids = list(cart_qs.values_list("dish_id", flat=True))
+            dishes_map = {d.id: d for d in Dish.objects.select_for_update().filter(id__in=dish_ids)}
+
+            for ci in cart_qs:
+                dish = dishes_map[ci.dish_id]
+                qty  = int(ci.quantity)
+                unit = dish.price
+                line = (unit * qty).quantize(Decimal("0.01"))
+                total += line
+                items_data.append((dish, dish.name, unit, qty, line))
+                if first_restaurant_id is None and hasattr(dish, "restaurant_id"):
+                    first_restaurant_id = dish.restaurant_id
+
+            st = validated_data["service_type"]
+
+            # ❌ 不要把 payment_method 传给 Order
             order = Order.objects.create(
-                user=user, restaurant_id=rid, status=OrderStatus.CREATED,
-                service_type=st, table_no=table_no,
-                contact_name=contact_name, contact_phone=contact_phone, address_line=address_line,
-                total_amount=total, client_token=(validated_data.get("client_token") or None),
+                user=user,
+                status=OrderStatus.CREATED,
+                service_type=st,
+                table_no=(validated_data.get("table_no") or None),
+                contact_name=(validated_data.get("contact_name") or ""),
+                contact_phone=(validated_data.get("contact_phone") or ""),
+                address_line=(validated_data.get("address_line") or ""),
+                total_amount=total,
+                client_token=(validated_data.get("client_token") or None),
+                **({"restaurant_id": first_restaurant_id} if first_restaurant_id is not None else {})
             )
-            # 明细
+
             for dish, dish_name, unit, qty, line in items_data:
                 OrderItem.objects.create(
                     order=order, dish=dish, dish_name=dish_name,
                     unit_price=unit, quantity=qty, line_total=line
                 )
-            # 首条状态
-            order.status_history.create(from_status=OrderStatus.CREATED, to_status=OrderStatus.CREATED, message="订单已创建")
+
+            order.status_history.create(
+                from_status=OrderStatus.CREATED, to_status=OrderStatus.CREATED, message="订单已创建"
+            )
+
             # 清空购物车
-            clear_cart(request)  # 使用修改后的不依赖 restaurant_id 的 clear_cart
+            cart_qs.delete()
+
+        # 这里**不**创建 Payment 记录；在 pay() 时再用前端上传的 method 创建即可
         return order
 
 

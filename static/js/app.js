@@ -21,8 +21,10 @@ async function apiFetchCart() {
     const res = await fetch("/api/cart/", { credentials: "include" });
     if (res.status === 403 || res.status === 401) return { unauthorized: true };
     if (!res.ok) throw new Error("获取购物车失败");
+
     return res.json();
 }
+
 // ---- 购物车 API 封装（供首页迷你购物车和“加入购物车”复用）----
 function normalizeCartData(raw) {
     if (raw && Array.isArray(raw.items)) {

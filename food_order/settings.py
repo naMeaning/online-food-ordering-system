@@ -15,6 +15,12 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'  # Database-backed sessions
+# or
+SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'  # Cache-backed sessions
+
+# SESSION_COOKIE_AGE = 3600  # 1 hour expiry
+
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/

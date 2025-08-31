@@ -4,7 +4,7 @@
 
 {% block content %}
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-  <!-- 左：收货/就餐信息 -->
+  <!-- 左：收件/就餐信息 -->
   <section class="lg:col-span-2 card">
     <h1 class="text-lg font-semibold mb-4">订单信息</h1>
 
@@ -13,72 +13,84 @@
       <div>
         <label class="block text-sm text-slate-600 mb-2">服务类型</label>
         <label class="inline-flex items-center gap-2 mr-6">
-        <input type="radio" name="service_type" value="DELIVERY" checked>
-        <span class="badge badge-indigo">外送</span>
+          <input type="radio" name="service_type" value="DELIVERY" checked>
+          <span>外送</span>
         </label>
         <label class="inline-flex items-center gap-2">
-        <input type="radio" name="service_type" value="DINE_IN">
-        <span class="badge badge-amber">堂食</span>
-</label>
+          <input type="radio" name="service_type" value="DINE_IN">
+          <span>堂食/自取</span>
+        </label>
       </div>
 
-      <!-- 外送需要的字段 -->
+      <!-- 外送字段 -->
       <div id="section-delivery" class="space-y-3">
         <div>
           <label class="block text-sm text-slate-600 mb-1">收货人</label>
-          <input name="contact_name" class="w-full rounded border" placeholder="张三">
+          <input name="contact_name" class="w-full rounded border p-2" placeholder="张三">
         </div>
         <div>
           <label class="block text-sm text-slate-600 mb-1">手机号</label>
-          <input name="contact_phone" class="w-full rounded border" placeholder="13800000000">
+          <input name="contact_phone" class="w-full rounded border p-2" placeholder="13800000000">
         </div>
         <div>
           <label class="block text-sm text-slate-600 mb-1">收货地址</label>
-          <textarea name="address_line" class="w-full rounded border" rows="3" placeholder="XX路XX号"></textarea>
+          <textarea name="address_line" class="w-full rounded border p-2" rows="3" placeholder="XX路XX号"></textarea>
         </div>
       </div>
 
-      <!-- 堂食需要的字段 -->
+      <!-- 堂食字段（初始隐藏） -->
       <div id="section-dinein" class="space-y-3 hidden">
         <div>
           <label class="block text-sm text-slate-600 mb-1">桌号 / 取餐码</label>
-          <input name="table_no" class="w-full rounded border" placeholder="A12 / 5号桌">
+          <input name="table_no" class="w-full rounded border p-2" placeholder="A12 / 5号桌">
         </div>
       </div>
 
-      <!-- 支付方式（先用模拟） -->
+      <!-- 支付方式 -->
       <div>
         <label class="block text-sm text-slate-600 mb-2">支付方式</label>
         <label class="inline-flex items-center gap-2 mr-4">
-          <input type="radio" name="payment_method" value="DUMMY" checked> 模拟支付
+          <input type="radio" name="payment_method" value="DUMMY" checked>
+          <span>模拟支付</span>
         </label>
       </div>
 
-      <div class="flex items-center gap-3">
-        <a href="/cart/" class="btn bg-slate-700 hover:bg-slate-800">返回购物车</a>
-        <button type="submit" id="btn-submit" class="btn flex-1">提交订单</button>
-      </div>
-
-      <input type="hidden" name="restaurant_id" value="{{ rid }}">
       <p id="checkout-error" class="text-rose-600 text-sm hidden"></p>
-
-
+      <div class="flex items-center gap-3">
+        <a href="/cart/" class="btn bg-slate-700 hover:bg-slate-800 text-white">返回购物车</a>
+        <button type="submit" id="btn-submit" class="btn flex-1 bg-indigo-600 hover:bg-indigo-700 text-white">提交订单</button>
+      </div>
     </form>
   </section>
 
-  <!-- 右：订单摘要（来自购物车） -->
+  <!-- 右：订单摘要（来自视图） -->
   <aside class="card">
     <h2 class="font-semibold mb-3">订单摘要</h2>
     {% if items %}
-      <ul class="divide-y mb-3">
-        {% for i in items %}
-          <li class="py-2 flex items-center justify-between">
-            <div class="truncate text-sm">{{ i.dish.name }} × {{ i.quantity }}</div>
-            <div class="text-rose-600">¥ {{ i.dish.price|floatformat:2 }}</div>
-          </li>
-        {% endfor %}
-      </ul>
-      <div class="flex items-center justify-between">
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <table class="w-full">
+          <thead class="bg-slate-50 text-slate-600 text-sm">
+            <tr>
+              <th class="text-left p-3">菜品</th>
+              <th class="text-left p-3">单价</th>
+              <th class="text-left p-3">数量</th>
+              <th class="text-left p-3">小计</th>
+            </tr>
+          </thead>
+          <tbody class="text-sm">
+            {% for i in items %}
+              <tr class="border-t">
+                <td class="p-3">{{ i.dish_name }}</td>
+                <td class="p-3">¥ {{ i.dish_price }}</td>
+                <td class="p-3">{{ i.quantity }}</td>
+                <td class="p-3">¥ {{ i.line_amount }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="mt-4 flex items-center justify-between">
         <div>共 {{ total_qty }} 件</div>
         <div class="text-lg">合计：<span class="text-rose-600 font-semibold">¥ {{ total_amount }}</span></div>
       </div>
@@ -88,8 +100,6 @@
   </aside>
 </div>
 
-<script>
-  window.__RID__ = {{ rid|default:"null" }};
-</script>
-<script src="{% static 'js/checkout.js' %}"></script>
+<script src="{% static 'js/app.js' %}" defer></script>
+<script src="{% static 'js/checkout.js' %}" defer></script>
 {% endblock %}

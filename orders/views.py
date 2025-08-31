@@ -243,12 +243,35 @@ class StaffOrderViewSet(viewsets.ReadOnlyModelViewSet):
    
    
 
-@ensure_csrf_cookie
 @login_required
+@ensure_csrf_cookie
 def checkout_page(request):
-    """结算页面，直接读取当前用户购物车"""
-    cart = get_cart(request)
-    if not cart["items"]:
+    """
+    结算页面：直接用 ORM 读取当前用户的购物车条目
+    """
+    cart_qs = (CartItem.objects
+               .filter(user=request.user)
+               .select_related("dish")
+               .order_by("id"))
+
+    items = []
+    total_qty = 0
+    total_amount = 0
+
+    for it in cart_qs:
+        line = it.dish.price * it.quantity
+        items.append({
+            "id": it.id,
+            "dish_id": it.dish_id,
+            "dish_name": it.dish.name,
+            "dish_price": it.dish.price,
+            "quantity": it.quantity,
+            "line_amount": line,
+        })
+        total_qty += it.quantity
+        total_amount += line
+
+    if not items:
         return render(request, "checkout.html", {
             "items": [],
             "total_qty": 0,
@@ -256,11 +279,10 @@ def checkout_page(request):
             "message": "购物车为空，先去点菜吧～",
         })
 
-    total_qty, total_amount = compute_summary(cart)
     return render(request, "checkout.html", {
-        "items": cart["items"],
+        "items": items,
         "total_qty": total_qty,
-        "total_amount": total_amount,
+        "total_amount": f"{total_amount:.2f}",
     })
 
 @login_required
